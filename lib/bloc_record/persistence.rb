@@ -37,6 +37,10 @@ module Persistence
     self.class.update(self.id, updates)
   end
 
+  def destroy
+    self.class.destroy(self.id)
+  end
+
   module ClassMethods
     def create(attrs)
       if attrs[:name] && attrs[:phone] && attrs[:email]
@@ -77,6 +81,43 @@ module Persistence
 
       def update_all(updates)
         update(nil, updates)
+      end
+
+      def destroy(*id)
+        if id.length > 1
+          where_clause = "WHERE id IN (#{id.join(",")});"
+        else
+          where_clause = "WHERE id = #{id.first};"
+        end
+
+        connection.execute <<-SQL
+          DELETE FROM #{table} #{where_clause}
+        SQL
+
+        true
+      end
+
+      def destroy_all(*args)
+        if args.count > 1
+          expression = args.shift
+          params = args
+        else
+          case args.first
+          when String
+            expression = args.first
+          when Hash
+            expression_hash = BlocRecord::Utility.convert_keys(args.first)
+            expression = expression_hash.map {|key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}"}.join(" and ")
+          end
+        end
+
+        sql = <<-SQL
+          DELETE FROM #{table}
+          WHERE #{expression};
+        SQL
+
+        connection.execute(sql, params)
+        true
       end
     end
 
