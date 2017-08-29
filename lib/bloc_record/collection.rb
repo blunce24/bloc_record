@@ -29,5 +29,9 @@ module BlocRecord
       self.any? ? self.first.not(args) : false
     end
 
+    def destroy_all(*args)
+      self.any? ? self.first.destroy_all(args) : false
+    end
+
   end
 end
